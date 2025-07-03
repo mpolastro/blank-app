@@ -77,9 +77,10 @@ if st.session_state.pagina == "inicio":
         enviar = st.form_submit_button('Começar')
 
         if enviar:
-            st.session_state.idade_usuario = idade
-            st.session_state.profissao = profissao
-            ir_para_respostas()
+            with st.spinner('Carregando perguntas...'):
+                st.session_state.idade_usuario = idade
+                st.session_state.profissao = profissao
+                ir_para_respostas()
 
 # --------------------------
 # Página de RESPOSTAS
@@ -113,11 +114,15 @@ elif st.session_state.pagina == "respostas":
                     st.session_state.respostas_usuario[idx] = valor
 
     st.markdown("---")
-    if st.button("✅ Finalizar e Ver Resultado"):
-        if any([resp is None or resp < 1 for resp in st.session_state.respostas_usuario]):
-            st.warning("⚠️ Por favor, preencha TODAS as idades (mínimo 1) antes de finalizar!")
-        else:
-            ir_para_resultado()
+    # ✅ Form para submit único (corrige o problema dos 2 cliques)
+    with st.form("form_respostas"):
+        finalizar = st.form_submit_button("✅ Finalizar e Ver Resultado")
+        if finalizar:
+            if any([resp is None or resp < 1 for resp in st.session_state.respostas_usuario]):
+                st.warning("⚠️ Por favor, preencha TODAS as idades (mínimo 1) antes de finalizar!")
+            else:
+                with st.spinner('Processando resultado...'):
+                    ir_para_resultado()
 
 # --------------------------
 # Página de RESULTADO
@@ -126,11 +131,12 @@ elif st.session_state.pagina == "resultado":
     st.title('📊 Resultado do Desafio')
 
     # Salvar no banco
-    salvar_predicao(
-        st.session_state.idade_usuario,
-        st.session_state.profissao,
-        st.session_state.respostas_usuario
-    )
+    with st.spinner('Salvando suas respostas...'):
+        salvar_predicao(
+            st.session_state.idade_usuario,
+            st.session_state.profissao,
+            st.session_state.respostas_usuario
+        )
 
     # Calcular MAE do usuário
     erros_usuario = [abs(real - pred) for real, pred in zip(dados['idade_real'], st.session_state.respostas_usuario)]
